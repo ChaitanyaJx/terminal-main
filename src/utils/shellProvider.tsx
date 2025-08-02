@@ -74,6 +74,33 @@ export const ShellProvider: React.FC<ShellProviderProps> = ({ children }) => {
     [command],
   );
 
+  // New function to update the last history entry (for streaming)
+  const updateLastHistory = useCallback((output: string) => {
+    _setHistory((h) => {
+      if (h.length === 0) return h;
+      const newHistory = [...h];
+      newHistory[newHistory.length - 1] = {
+        ...newHistory[newHistory.length - 1],
+        output
+      };
+      return newHistory;
+    });
+  }, []);
+
+  // New function to append to the last history entry
+  const appendToLastHistory = useCallback((additionalOutput: string) => {
+    _setHistory((h) => {
+      if (h.length === 0) return h;
+      const newHistory = [...h];
+      const lastEntry = newHistory[newHistory.length - 1];
+      newHistory[newHistory.length - 1] = {
+        ...lastEntry,
+        output: lastEntry.output + '\n' + additionalOutput
+      };
+      return newHistory;
+    });
+  }, []);
+
   const setCommand = useCallback((command: string) => {
     const commandText = command;
     setCurrentCommand(commandText);
@@ -131,8 +158,11 @@ export const ShellProvider: React.FC<ShellProviderProps> = ({ children }) => {
   const execute = useCallback(async () => {
     const [cmd, ...args] = command.split(' ').slice(1);
     
-    // Set executing state
+    // Set executing state immediately
     setIsExecuting(true);
+    
+    // Small delay to ensure UI updates
+    await new Promise(resolve => setTimeout(resolve, 10));
 
     if (isTrackingEnabled) {
       window.umami.track(`command - ${cmd}`, {
@@ -154,6 +184,142 @@ export const ShellProvider: React.FC<ShellProviderProps> = ({ children }) => {
         case '':
           setHistory('');
           break;
+
+        // Network commands that support streaming
+        case 'curl': {
+          // Initialize with loading message
+          setHistory('Initializing curl...');
+          
+          let isFirstUpdate = true;
+          const progressCallback = (message: string) => {
+            if (isFirstUpdate) {
+              updateLastHistory(message);
+              isFirstUpdate = false;
+            } else {
+              appendToLastHistory(message);
+            }
+          };
+
+          try {
+            const output = await bin.curl(args, progressCallback);
+            // Replace all progress messages with final output
+            updateLastHistory(output);
+          } catch (error) {
+            updateLastHistory(`curl: Error - ${error.message}`);
+          }
+          break;
+        }
+
+        case 'fetch': {
+          setHistory('Initializing fetch...');
+          
+          let isFirstUpdate = true;
+          const progressCallback = (message: string) => {
+            if (isFirstUpdate) {
+              updateLastHistory(message);
+              isFirstUpdate = false;
+            } else {
+              appendToLastHistory(message);
+            }
+          };
+
+          try {
+            const output = await bin.fetch_api(args, progressCallback);
+            updateLastHistory(output);
+          } catch (error) {
+            updateLastHistory(`fetch: Error - ${error.message}`);
+          }
+          break;
+        }
+
+        case 'wget': {
+          setHistory('Initializing wget...');
+          
+          let isFirstUpdate = true;
+          const progressCallback = (message: string) => {
+            if (isFirstUpdate) {
+              updateLastHistory(message);
+              isFirstUpdate = false;
+            } else {
+              appendToLastHistory(message);
+            }
+          };
+
+          try {
+            const output = await bin.wget(args, progressCallback);
+            updateLastHistory(output);
+          } catch (error) {
+            updateLastHistory(`wget: Error - ${error.message}`);
+          }
+          break;
+        }
+
+        case 'ping': {
+          setHistory('Starting ping...');
+          
+          let isFirstUpdate = true;
+          const progressCallback = (message: string) => {
+            if (isFirstUpdate) {
+              updateLastHistory(message);
+              isFirstUpdate = false;
+            } else {
+              appendToLastHistory(message);
+            }
+          };
+
+          try {
+            const output = await bin.ping(args, progressCallback);
+            updateLastHistory(output);
+          } catch (error) {
+            updateLastHistory(`ping: Error - ${error.message}`);
+          }
+          break;
+        }
+
+        case 'whois': {
+          setHistory('Initializing whois lookup...');
+          
+          let isFirstUpdate = true;
+          const progressCallback = (message: string) => {
+            if (isFirstUpdate) {
+              updateLastHistory(message);
+              isFirstUpdate = false;
+            } else {
+              appendToLastHistory(message);
+            }
+          };
+
+          try {
+            const output = await bin.whois(args, progressCallback);
+            updateLastHistory(output);
+          } catch (error) {
+            updateLastHistory(`whois: Error - ${error.message}`);
+          }
+          break;
+        }
+
+        case 'nslookup': {
+          setHistory('Initializing DNS lookup...');
+          
+          let isFirstUpdate = true;
+          const progressCallback = (message: string) => {
+            if (isFirstUpdate) {
+              updateLastHistory(message);
+              isFirstUpdate = false;
+            } else {
+              appendToLastHistory(message);
+            }
+          };
+
+          try {
+            const output = await bin.nslookup(args, progressCallback);
+            updateLastHistory(output);
+          } catch (error) {
+            updateLastHistory(`nslookup: Error - ${error.message}`);
+          }
+          break;
+        }
+
         default: {
           if (Object.keys(bin).indexOf(cmd) === -1) {
             setHistory(`Command not found: ${cmd}. Try 'help' to get started.`);
@@ -189,12 +355,18 @@ export const ShellProvider: React.FC<ShellProviderProps> = ({ children }) => {
           }
         }
       }
+    } catch (executionError) {
+      console.error('Command execution error:', executionError);
+      setHistory(`Error executing command: ${executionError.message}`);
     } finally {
-      // Reset executing state and current command
+      // Ensure executing state is always reset
       setIsExecuting(false);
       setCurrentCommand('');
+      
+      // Small delay to ensure UI updates properly
+      await new Promise(resolve => setTimeout(resolve, 10));
     }
-  }, [command, setTheme, setHistory, clearHistory]);
+  }, [command, setTheme, setHistory, updateLastHistory, appendToLastHistory, clearHistory]);
 
   useEffect(() => {
     setCommand('banner');

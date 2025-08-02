@@ -20,20 +20,23 @@ const formatHeaders = (headers: Headers): string => {
   return formatJSON(headerObj);
 };
 
-// Helper function to simulate network delay with progress updates
-const simulateDelayWithProgress = (
-  ms: number = 100 + Math.random() * 400,
+// Helper function to create delays with progress updates
+const createProgressDelay = async (
+  totalMs: number,
+  steps: string[],
   onProgress?: (message: string) => void
 ): Promise<void> => {
-  return new Promise(resolve => {
-    if (onProgress) {
-      onProgress('Initializing connection...');
-      setTimeout(() => onProgress('Establishing connection...'), ms * 0.3);
-      setTimeout(() => onProgress('Sending request...'), ms * 0.6);
-      setTimeout(() => onProgress('Receiving response...'), ms * 0.8);
-    }
-    setTimeout(resolve, ms);
-  });
+  if (!onProgress) {
+    await new Promise(resolve => setTimeout(resolve, totalMs));
+    return;
+  }
+
+  const stepDelay = totalMs / steps.length;
+  
+  for (const step of steps) {
+    onProgress(step);
+    await new Promise(resolve => setTimeout(resolve, stepDelay));
+  }
 };
 
 // Progress callback interface
@@ -104,20 +107,18 @@ Examples:
     return 'curl: no URL specified';
   }
 
-  if (!silent && onProgress) {
-    onProgress(`Preparing curl request to ${url}...`);
-    await simulateDelayWithProgress(200, onProgress);
-  } else if (!silent) {
-    await new Promise(resolve => setTimeout(resolve, 200));
+  // Progress steps
+  if (!silent) {
+    await createProgressDelay(400, [
+      'Resolving hostname...',
+      'Connecting to server...',
+      'Sending request...'
+    ], onProgress);
   }
 
   try {
     const startTime = Date.now();
     
-    if (onProgress && !silent) {
-      onProgress(`Connecting to ${new URL(url).hostname}...`);
-    }
-
     const headers = new Headers({
       'User-Agent': 'curl/7.68.0',
       ...customHeaders
@@ -128,7 +129,7 @@ Examples:
     }
 
     if (onProgress && !silent) {
-      onProgress(`Sending ${method} request...`);
+      onProgress('Waiting for response...');
     }
 
     const response = await fetch(url, {
@@ -138,7 +139,7 @@ Examples:
     });
 
     if (onProgress && !silent) {
-      onProgress(`Received response (${response.status})...`);
+      onProgress(`Response received (${response.status})`);
     }
 
     const endTime = Date.now();
@@ -166,10 +167,10 @@ Examples:
     }
 
     if (showTiming) {
-      result += `\n\nTiming info:
-  Response time: ${responseTime}ms
-  Status: ${response.status}
-  Size: ${result.length} bytes`;
+      result += `\n\n<span style="color: #87CEEB">Timing info:</span>
+  Response time: <span style="color: #98FB98">${responseTime}ms</span>
+  Status: <span style="color: #FFB6C1">${response.status}</span>
+  Size: <span style="color: #DDA0DD">${result.length} bytes</span>`;
     }
 
     return result;
@@ -199,9 +200,10 @@ Examples:
   let customHeaders = {};
   let data: any = null;
 
-  if (onProgress) {
-    onProgress('Parsing fetch arguments...');
-  }
+  await createProgressDelay(200, [
+    'Parsing arguments...',
+    'Validating parameters...'
+  ], onProgress);
 
   // Parse options
   for (let i = 1; i < args.length; i += 2) {
@@ -230,20 +232,15 @@ Examples:
     }
   }
 
-  if (onProgress) {
-    onProgress(`Preparing ${method} request to ${url}...`);
-    await simulateDelayWithProgress(150, onProgress);
-  } else {
-    await new Promise(resolve => setTimeout(resolve, 150));
-  }
+  await createProgressDelay(300, [
+    `Preparing ${method} request...`,
+    'Building headers...',
+    'Connecting to server...'
+  ], onProgress);
 
   try {
     const startTime = Date.now();
     
-    if (onProgress) {
-      onProgress('Building request headers...');
-    }
-
     const headers = new Headers({
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -251,7 +248,7 @@ Examples:
     });
 
     if (onProgress) {
-      onProgress('Executing fetch request...');
+      onProgress('Sending request...');
     }
 
     const response = await fetch(url, {
@@ -261,15 +258,11 @@ Examples:
     });
 
     if (onProgress) {
-      onProgress(`Response received (${response.status}), parsing JSON...`);
+      onProgress(`Processing response (${response.status})...`);
     }
 
     const endTime = Date.now();
     const responseData = await response.json();
-
-    if (onProgress) {
-      onProgress('Formatting response data...');
-    }
 
     const result = {
       status: response.status,
@@ -307,10 +300,6 @@ Examples:
   let filename: string | undefined;
   let url: string;
 
-  if (onProgress && !quiet) {
-    onProgress('Parsing wget arguments...');
-  }
-
   // Parse arguments
   const oIndex = args.indexOf('-O');
   if (oIndex !== -1 && oIndex + 1 < args.length) {
@@ -333,18 +322,15 @@ Examples:
     }
   }
 
-  if (!quiet && onProgress) {
-    onProgress(`Resolving ${url}...`);
-    await simulateDelayWithProgress(300, onProgress);
-  } else if (!quiet) {
-    await new Promise(resolve => setTimeout(resolve, 300));
+  if (!quiet) {
+    await createProgressDelay(500, [
+      `Resolving ${url}...`,
+      `Connecting to ${new URL(url).hostname}...`,
+      'Downloading...'
+    ], onProgress);
   }
 
   try {
-    if (onProgress && !quiet) {
-      onProgress(`Connecting to ${new URL(url).hostname}...`);
-    }
-
     const response = await fetch(url);
     
     if (!response.ok) {
@@ -352,15 +338,11 @@ Examples:
     }
 
     if (onProgress && !quiet) {
-      onProgress('Downloading content...');
+      onProgress('Reading response data...');
     }
 
     const content = await response.text();
     
-    if (onProgress && !quiet) {
-      onProgress('Preparing to save file...');
-    }
-
     // Import filesystem functions dynamically to avoid circular dependencies
     const { getFileSystem, saveFileSystem, normalizePath, pathExists, isDirectory } = await import('./filesystem');
     
@@ -392,12 +374,8 @@ Examples:
     saveFileSystem(fs);
 
     const size = content.length;
-    
-    if (onProgress && !quiet) {
-      onProgress(`File saved successfully (${size} bytes)`);
-    }
 
-    return quiet ? '' : `'${filename}' saved [${size} bytes]`;
+    return quiet ? '' : `<span style="color: #98FB98">'${filename}' saved [${size} bytes]</span>`;
 
   } catch (error) {
     return `wget: unable to resolve host address '${url}'\n${error.message}`;
@@ -418,14 +396,14 @@ Examples:
   const count = 4; // Default ping count
 
   if (onProgress) {
-    onProgress(`Starting ping to ${host}...`);
+    onProgress(`PING ${host} (simulation starting...)`);
   }
 
-  let result = `PING ${host} (simulated): 56 data bytes\n`;
+  let result = `<span style="color: #87CEEB">PING ${host} (simulated): 56 data bytes</span>\n`;
 
   for (let i = 0; i < count; i++) {
     if (onProgress) {
-      onProgress(`Sending ping ${i + 1}/${count} to ${host}...`);
+      onProgress(`Ping ${i + 1}/${count}: Sending ICMP packet to ${host}...`);
     }
     
     await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay between pings
@@ -434,24 +412,26 @@ Examples:
     const success = Math.random() > 0.1; // 90% success rate
 
     if (success) {
-      result += `64 bytes from ${host}: icmp_seq=${i + 1} time=${time}ms\n`;
+      const pingResult = `64 bytes from ${host}: icmp_seq=${i + 1} time=${time}ms`;
+      result += `<span style="color: #98FB98">${pingResult}</span>\n`;
       if (onProgress) {
-        onProgress(`Ping ${i + 1} successful: ${time}ms`);
+        onProgress(`Ping ${i + 1}: Reply from ${host} (${time}ms)`);
       }
     } else {
-      result += `Request timeout for icmp_seq ${i + 1}\n`;
+      const timeoutResult = `Request timeout for icmp_seq ${i + 1}`;
+      result += `<span style="color: #FFB6C1">${timeoutResult}</span>\n`;
       if (onProgress) {
-        onProgress(`Ping ${i + 1} timeout`);
+        onProgress(`Ping ${i + 1}: Timeout (no reply)`);
       }
     }
   }
 
   if (onProgress) {
-    onProgress('Calculating ping statistics...');
+    onProgress('Calculating statistics...');
   }
 
-  result += `\n--- ${host} ping statistics ---\n`;
-  result += `${count} packets transmitted, ${count - 1} received, 25% packet loss`;
+  result += `\n<span style="color: #DDA0DD">--- ${host} ping statistics ---</span>\n`;
+  result += `<span style="color: #F0E68C">${count} packets transmitted, ${count - 1} received, 25% packet loss</span>`;
 
   return result;
 };
@@ -468,17 +448,12 @@ Examples:
 
   const domain = args[0].replace(/^https?:\/\//, '').replace(/\/.*$/, '');
 
-  if (onProgress) {
-    onProgress(`Looking up whois information for ${domain}...`);
-    onProgress('Connecting to whois server...');
-    onProgress('Querying domain registration data...');
-  }
-
-  await new Promise(resolve => setTimeout(resolve, 500));
-
-  if (onProgress) {
-    onProgress('Processing whois response...');
-  }
+  await createProgressDelay(800, [
+    `Looking up whois information for ${domain}...`,
+    'Connecting to whois server...',
+    'Querying domain registration data...',
+    'Processing whois response...'
+  ], onProgress);
 
   // Simulate whois data (since we can't actually do real whois lookups from browser)
   const whoisData = {
@@ -499,23 +474,19 @@ Examples:
     lastUpdated: new Date().toISOString()
   };
 
-  if (onProgress) {
-    onProgress('Formatting whois data...');
-  }
-
-  let result = `Domain Name: ${domain.toUpperCase()}\n`;
-  result += `Registry Domain ID: SIM123456789\n`;
-  result += `Registrar: ${whoisData.registrar}\n`;
-  result += `Registration Date: ${whoisData.registrationDate}\n`;
-  result += `Expiration Date: ${whoisData.expirationDate}\n`;
-  result += `Domain Status: ${whoisData.status}\n`;
-  result += `Name Servers:\n`;
+  let result = `<span style="color: #87CEEB">Domain Name:</span> <span style="color: #98FB98">${domain.toUpperCase()}</span>\n`;
+  result += `<span style="color: #87CEEB">Registry Domain ID:</span> <span style="color: #FFB6C1">SIM123456789</span>\n`;
+  result += `<span style="color: #87CEEB">Registrar:</span> <span style="color: #98FB98">${whoisData.registrar}</span>\n`;
+  result += `<span style="color: #87CEEB">Registration Date:</span> <span style="color: #DDA0DD">${whoisData.registrationDate}</span>\n`;
+  result += `<span style="color: #87CEEB">Expiration Date:</span> <span style="color: #DDA0DD">${whoisData.expirationDate}</span>\n`;
+  result += `<span style="color: #87CEEB">Domain Status:</span> <span style="color: #F0E68C">${whoisData.status}</span>\n`;
+  result += `<span style="color: #87CEEB">Name Servers:</span>\n`;
   whoisData.nameServers.forEach(ns => {
-    result += `    ${ns}\n`;
+    result += `    <span style="color: #98FB98">${ns}</span>\n`;
   });
-  result += `DNSSEC: ${whoisData.dnssec}\n`;
-  result += `Last Updated: ${whoisData.lastUpdated}\n`;
-  result += `\nNote: This is simulated whois data for demonstration purposes.`;
+  result += `<span style="color: #87CEEB">DNSSEC:</span> <span style="color: #FFB6C1">${whoisData.dnssec}</span>\n`;
+  result += `<span style="color: #87CEEB">Last Updated:</span> <span style="color: #DDA0DD">${whoisData.lastUpdated}</span>\n`;
+  result += `\n<span style="color: #F0E68C">Note: This is simulated whois data for demonstration purposes.</span>`;
 
   return result;
 };
@@ -532,19 +503,14 @@ Examples:
 
   const domain = args[0].replace(/^https?:\/\//, '').replace(/\/.*$/, '');
 
-  if (onProgress) {
-    onProgress(`Looking up DNS records for ${domain}...`);
-    onProgress('Connecting to DNS server (8.8.8.8)...');
-    onProgress('Querying A records...');
-  }
-
-  await new Promise(resolve => setTimeout(resolve, 200));
+  await createProgressDelay(400, [
+    `Looking up DNS records for ${domain}...`,
+    'Connecting to DNS server (8.8.8.8)...',
+    'Querying A records...',
+    'Processing DNS response...'
+  ], onProgress);
 
   try {
-    if (onProgress) {
-      onProgress('Processing DNS response...');
-    }
-
     // We can't do real DNS lookups from the browser, so we'll simulate it
     // In a real implementation, you might use a DNS-over-HTTPS service
     
@@ -557,16 +523,16 @@ Examples:
       onProgress(`Found ${simulatedIPs.length} IP addresses`);
     }
 
-    let result = `Server:    8.8.8.8\n`;
-    result += `Address:   8.8.8.8#53\n\n`;
-    result += `Non-authoritative answer:\n`;
-    result += `Name:   ${domain}\n`;
+    let result = `<span style="color: #87CEEB">Server:</span>    <span style="color: #98FB98">8.8.8.8</span>\n`;
+    result += `<span style="color: #87CEEB">Address:</span>   <span style="color: #98FB98">8.8.8.8#53</span>\n\n`;
+    result += `<span style="color: #DDA0DD">Non-authoritative answer:</span>\n`;
+    result += `<span style="color: #87CEEB">Name:</span>   <span style="color: #F0E68C">${domain}</span>\n`;
     
     simulatedIPs.forEach(ip => {
-      result += `Address: ${ip}\n`;
+      result += `<span style="color: #87CEEB">Address:</span> <span style="color: #FFB6C1">${ip}</span>\n`;
     });
 
-    result += `\nNote: These are simulated IP addresses for demonstration purposes.`;
+    result += `\n<span style="color: #F0E68C">Note: These are simulated IP addresses for demonstration purposes.</span>`;
 
     return result;
 

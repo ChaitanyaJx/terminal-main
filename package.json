@@ -1,55 +1,43 @@
 {
   "name": "terminal",
-  "version": "2.17.0",
-  "license": "MIT",
+  "version": "2.0.0",
+  "description": "Web-based terminal interface",
   "author": {
-    "name": "Yassine Fathi",
-    "url": "https://m4tt72.com",
-    "email": "hi@m4tt72.com"
+    "name": "Chaitanya Jambhulkar",
+    "email": "chaitanyajambhulkar768@gmail.com"
   },
-  "funding": {
-    "type": "Paypal",
-    "url": "https://paypal.me/yfthi"
-  },
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/m4tt72/terminal"
+    "url": "https://github.com/ChaitanyaJx/terminal-main"
+  },
+  "funding": {
+    "type": "GitHub Sponsors",
+    "url": "https://github.com/sponsors/ChaitanyaJx"
   },
   "scripts": {
-    "start": "next start",
-    "build": "next build",
     "dev": "next dev",
-    "export": "next export",
-    "lint": "next lint",
-    "prepare": "husky install"
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
-    "axios": "^1.6.2",
+    "axios": "^0.27.2",
     "cowsay-browser": "^1.1.8",
-    "date-fns": "^3.0.6",
-    "next": "^14.0.4",
-    "react": "^18.1.0",
-    "react-dom": "^18.1.0",
-    "react-icons": "^4.12.0"
+    "date-fns": "^2.28.0",
+    "next": "12.1.6",
+    "react": "18.1.0",
+    "react-dom": "18.1.0"
   },
   "devDependencies": {
-    "@next/eslint-plugin-next": "^14.0.4",
-    "@types/node": "^20.10.5",
-    "@types/react": "^18.2.45",
-    "@typescript-eslint/eslint-plugin": "^6.15.0",
-    "@typescript-eslint/parser": "^6.15.0",
-    "autoprefixer": "^10.4.16",
-    "eslint": "^8",
-    "eslint-config-next": "^14.0.4",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.5",
-    "husky": "^8.0.3",
-    "postcss": "^8.4.32",
-    "prettier": "^3.1.1",
-    "tailwindcss": "^3.4.0",
-    "typescript": "^5"
-  },
-  "engines": {
-    "node": ">=18.17.0"
+    "@types/node": "17.0.35",
+    "@types/react": "18.0.9",
+    "@types/react-dom": "18.0.4",
+    "autoprefixer": "^10.4.7",
+    "eslint": "8.16.0",
+    "eslint-config-next": "12.1.6",
+    "postcss": "^8.4.14",
+    "tailwindcss": "^3.0.24",
+    "typescript": "4.7.2"
   }
 }

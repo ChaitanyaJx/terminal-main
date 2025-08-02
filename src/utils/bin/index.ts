@@ -1,7 +1,5 @@
 // src/utils/bin/index.ts
 export * from './about';
-export * from './projects';
-export * from './social';
 export * from './theme';
 export * from './utils';
 export * from './weather';

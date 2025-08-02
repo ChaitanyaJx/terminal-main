@@ -1,6 +1,21 @@
 import { formatDistanceToNow } from 'date-fns';
-import packageJson from '../../../package.json';
-import themes from '../../../themes.json';
+
+// Mock package.json data since we removed the import
+const packageInfo = {
+  version: "2.0.0",
+  license: "MIT",
+  author: {
+    name: "Chaitanya Jambhulkar",
+    email: "chaitanyajambhulkar768@gmail.com"
+  },
+  repository: {
+    url: "https://github.com/ChaitanyaJx/terminal"
+  },
+  funding: {
+    type: "GitHub Sponsors", 
+    url: "https://github.com/sponsors/ChaitanyaJx"
+  }
+};
 
 const macos = `
                     'c.
@@ -86,16 +101,22 @@ const getPlatform = (): 'Unknown' | 'Windows' | 'MacOS' | 'Linux' => {
 
 const getMainColor = () => {
   const platform = getPlatform();
-  const themeName = localStorage.getItem('theme');
-  const theme = themes.find((theme) => theme.name.toLowerCase() === themeName);
+  // Default theme colors since we can't import themes here
+  const defaultColors = {
+    cyan: '#8EC07C',
+    blue: '#83A598', 
+    red: '#FB4934'
+  };
 
   switch (platform) {
     case 'MacOS':
-      return theme.cyan;
+      return defaultColors.cyan;
     case 'Windows':
-      return theme.blue;
+      return defaultColors.blue;
     case 'Linux':
-      return theme.red;
+      return defaultColors.red;
+    default:
+      return '#FFFFFF';
   }
 };
 
@@ -110,6 +131,8 @@ const getArt = () => {
       return `<p style="color: ${mainColor}">${windows}</p>`;
     case 'Linux':
       return `<p style="color: ${mainColor}">${linux}</p>`;
+    default:
+      return `<p style="color: ${mainColor}">${linux}</p>`;
   }
 };
 
@@ -118,31 +141,24 @@ const getInfo = () => {
   const visitedAt = new Date(
     localStorage.getItem('visitedAt') || new Date().toString(),
   );
-  const hostname = window.location.hostname;
-  const theme = localStorage.getItem('theme');
+  const hostname = window.location.hostname || 'localhost';
+  const theme = localStorage.getItem('theme') || 'default';
   const resolution = `${window.screen.availWidth}x${window.screen.availHeight}`;
-  const packages = Object.keys(packageJson.dependencies);
-  const devPackages = Object.keys(packageJson.devDependencies);
   const mainColor = getMainColor();
 
   let message = '';
 
   message += `<span style="color: ${mainColor}">Host</span>: ${hostname}\n`;
   message += `<span style="color: ${mainColor}">OS</span>: ${os}\n`;
-  message += `<span style="color: ${mainColor}">Packages</span>: ${
-    packages.length + devPackages.length
-  } (npm)\n`;
   message += `<span style="color: ${mainColor}">Resolution</span>: ${resolution}\n`;
-  message += `<span style="color: ${mainColor}">Shell</span>: m4tt72-web\n`;
+  message += `<span style="color: ${mainColor}">Shell</span>: terminalx-web\n`;
   message += `<span style="color: ${mainColor}">Theme</span>: ${theme}\n`;
-  message += `<span style="color: ${mainColor}">License</span>: ${packageJson.license}\n`;
-  message += `<span style="color: ${mainColor}">Version</span>: ${packageJson.version}\n`;
-  message += `<span style="color: ${mainColor}">Repo</span>: <a href="${packageJson.repository.url}" target="_blank">${packageJson.repository.url}</a>\n`;
+  message += `<span style="color: ${mainColor}">License</span>: ${packageInfo.license}\n`;
+  message += `<span style="color: ${mainColor}">Version</span>: ${packageInfo.version}\n`;
   message += `<span style="color: ${mainColor}">Uptime</span>: ${formatDistanceToNow(
     visitedAt,
   )}\n`;
-  message += `<span style="color: ${mainColor}">Author</span>: ${packageJson.author.name} (${packageJson.author.email})\n`;
-  message += `<span style="color: ${mainColor}">Donate</span>: <a href="${packageJson.funding.url}" target="_blank">${packageJson.funding.type}</a>\n`;
+  message += `<span style="color: ${mainColor}">Author</span>: ${packageInfo.author.name}\n`;
 
   return message;
 };

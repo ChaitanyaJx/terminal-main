@@ -32,7 +32,7 @@ export const Input = ({ inputRef, containerRef }) => {
       .map(({ command }) => command)
       .filter((value: string) => value);
 
-    // Prevent input if command is executing (except for cat mode)
+    // Prevent ALL input if command is executing (except for cat mode)
     if (isExecuting && !catMode.active) {
       event.preventDefault();
       return;
@@ -58,7 +58,7 @@ export const Input = ({ inputRef, containerRef }) => {
       return;
     }
 
-    // Normal shell mode
+    // Normal shell mode - only allow if NOT executing
     if (event.key === 'c' && event.ctrlKey) {
       event.preventDefault();
       setValue('');
@@ -128,8 +128,8 @@ export const Input = ({ inputRef, containerRef }) => {
   };
 
   const getInputValue = () => {
-    if (isExecuting && currentCommand) {
-      return currentCommand; // Show the executing command
+    if (isExecuting) {
+      return ''; // Clear input when executing
     }
     return value;
   };
@@ -139,10 +139,30 @@ export const Input = ({ inputRef, containerRef }) => {
       return 'Enter content... (Ctrl+C or Ctrl+D to save)';
     }
     if (isExecuting) {
-      return 'Executing...';
+      return 'Executing command...';
     }
     return '';
   };
+
+  // Show PS1 with disabled input during execution
+  if (isExecuting && !catMode.active) {
+    return (
+      <div className="flex flex-row space-x-2">
+        <label htmlFor="prompt" className="flex-shrink">
+          <Ps1 />
+        </label>
+        <span 
+          className="flex-grow"
+          style={{
+            color: theme.yellow,
+            fontStyle: 'italic'
+          }}
+        >
+          Executing...
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-row space-x-2">
@@ -165,7 +185,12 @@ export const Input = ({ inputRef, containerRef }) => {
           color: getPromptColor(),
         }}
         value={getInputValue()}
-        onChange={(event) => setValue(event.target.value)}
+        onChange={(event) => {
+          // Only allow changes if not executing
+          if (!isExecuting || catMode.active) {
+            setValue(event.target.value);
+          }
+        }}
         autoFocus
         onKeyDown={onSubmit}
         autoComplete="off"
