@@ -1,3 +1,4 @@
+// src/pages/_app.tsx
 import Head from 'next/head';
 import React, { useEffect } from 'react';
 import { Layout } from '../components/layout';
@@ -18,6 +19,27 @@ const App = ({ Component, pageProps }) => {
 
   useEffect(() => {
     localStorage.setItem('visitedAt', new Date().toString());
+    
+    // Initialize filesystem and current path if not exists
+    if (!localStorage.getItem('currentPath')) {
+      localStorage.setItem('currentPath', '/home/guest');
+    }
+    
+    // Initialize default filesystem if not exists
+    if (!localStorage.getItem('filesystem')) {
+      const defaultFS = {
+        '/': { type: 'directory', created: new Date(), modified: new Date() },
+        '/home': { type: 'directory', created: new Date(), modified: new Date() },
+        '/home/guest': { type: 'directory', created: new Date(), modified: new Date() },
+        '/home/guest/README.md': { 
+          type: 'file', 
+          content: 'Welcome to the terminal!\n\nTry these commands:\n- ls (list files)\n- mkdir (create directory)\n- touch (create file)\n- cat (read file)\n- tree (show directory structure)\n\nType "help" for more commands.',
+          created: new Date(), 
+          modified: new Date() 
+        },
+      };
+      localStorage.setItem('filesystem', JSON.stringify(defaultFS));
+    }
   }, []);
 
   return (

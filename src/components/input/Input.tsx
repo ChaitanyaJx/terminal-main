@@ -1,3 +1,4 @@
+// src/components/input/Input.tsx
 import React, { useEffect, useState } from 'react';
 import { commandExists } from '../../utils/commandExists';
 import { useShell } from '../../utils/shellProvider';
@@ -15,6 +16,11 @@ export const Input = ({ inputRef, containerRef }) => {
     setHistory,
     setLastCommandIndex,
     clearHistory,
+    catMode,
+    handleCatInput,
+    exitCatMode,
+    isExecuting,
+    currentCommand,
   } = useShell();
 
   useEffect(() => {
@@ -26,35 +32,54 @@ export const Input = ({ inputRef, containerRef }) => {
       .map(({ command }) => command)
       .filter((value: string) => value);
 
+    // Prevent input if command is executing (except for cat mode)
+    if (isExecuting && !catMode.active) {
+      event.preventDefault();
+      return;
+    }
+
+    // Handle cat mode
+    if (catMode.active) {
+      if ((event.key === 'c' && event.ctrlKey) || (event.key === 'd' && event.ctrlKey)) {
+        event.preventDefault();
+        await exitCatMode();
+        setValue('');
+        return;
+      }
+
+      if (event.key === 'Enter' || event.code === '13') {
+        event.preventDefault();
+        handleCatInput(value);
+        setValue('');
+        return;
+      }
+
+      // Allow normal typing in cat mode
+      return;
+    }
+
+    // Normal shell mode
     if (event.key === 'c' && event.ctrlKey) {
       event.preventDefault();
-
       setValue('');
-
       setHistory('');
-
       setLastCommandIndex(0);
     }
 
     if (event.key === 'l' && event.ctrlKey) {
       event.preventDefault();
-
       clearHistory();
     }
 
     if (event.key === 'Tab') {
       event.preventDefault();
-
       handleTabCompletion(value, setValue);
     }
 
     if (event.key === 'Enter' || event.code === '13') {
       event.preventDefault();
-
       setLastCommandIndex(0);
-
       setCommand(value);
-
       setValue('');
     }
 
@@ -92,10 +117,41 @@ export const Input = ({ inputRef, containerRef }) => {
     }
   };
 
+  const getPromptColor = () => {
+    if (catMode.active) {
+      return theme.cyan; // Different color for cat mode
+    }
+    if (isExecuting) {
+      return theme.yellow; // Yellow when executing
+    }
+    return commandExists(value) || value === '' ? theme.green : theme.red;
+  };
+
+  const getInputValue = () => {
+    if (isExecuting && currentCommand) {
+      return currentCommand; // Show the executing command
+    }
+    return value;
+  };
+
+  const getPlaceholder = () => {
+    if (catMode.active) {
+      return 'Enter content... (Ctrl+C or Ctrl+D to save)';
+    }
+    if (isExecuting) {
+      return 'Executing...';
+    }
+    return '';
+  };
+
   return (
     <div className="flex flex-row space-x-2">
       <label htmlFor="prompt" className="flex-shrink">
-        <Ps1 />
+        {catMode.active ? (
+          <span style={{ color: theme.cyan }}>cat&gt;</span>
+        ) : (
+          <Ps1 />
+        )}
       </label>
 
       <input
@@ -106,15 +162,18 @@ export const Input = ({ inputRef, containerRef }) => {
         aria-label="prompt"
         style={{
           backgroundColor: theme.background,
-          color: commandExists(value) || value === '' ? theme.green : theme.red,
+          color: getPromptColor(),
         }}
-        value={value}
+        value={getInputValue()}
         onChange={(event) => setValue(event.target.value)}
         autoFocus
         onKeyDown={onSubmit}
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
+        placeholder={getPlaceholder()}
+        disabled={isExecuting && !catMode.active}
+        readOnly={isExecuting && !catMode.active}
       />
     </div>
   );
