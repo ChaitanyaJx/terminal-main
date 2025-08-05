@@ -6,8 +6,7 @@
 
 🚀 **An enhanced web-based terminal emulator with advanced filesystem and network capabilities**
 
-
---
+[Link to the project](https://webtermx.netlify.app/)
 ## 🌟 About This Project
 
 This is a **fork** of [m4tt72/terminal](https://github.com/m4tt72/terminal) with new features. What started as a simple web terminal has been transformed into a powerful, feature-rich terminal emulator that provides a genuine Linux-like experience in your browser.
